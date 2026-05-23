@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Focus Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="container">
+
+    <h1>Focus Dashboard</h1>
+
+    <div class="timer-box">
+      <div class="timer-config" style="margin-bottom: 20px;">
+        <label for="durationInput">Set Limit (Minutes): </label>
+        <input type="number" id="durationInput" min="1" max="180" value="25" style="width: 60px;">
+      </div>
+
+      <div class="countdown-container">
+        <svg class="progress-ring" width="280" height="280">
+          <circle class="progress-ring__background" stroke="#334155" stroke-width="8" fill="transparent" r="120" cx="140" cy="140"/>
+          <circle class="progress-ring__circle" id="progressCircle" stroke="#10B981" stroke-width="8" fill="transparent" r="120" cx="140" cy="140"/>
+        </svg>
+        <div class="timer-text-container">
+          <h2 id="timer">00:00:00</h2>
+          <p id="remainingDisplay">Set time & start</p>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button id="startBtn">Start Session</button>
+        <button id="stopBtn">Stop Session</button>
+      </div>
+    </div>
+
+    <div class="stats-box">
+      <h3>Today’s Focus</h3>
+      <canvas id="chart"></canvas>
+    </div>
+
+    <div class="settings-box">
+      <h3>Distraction Shield (Simulation)</h3>
+      <div class="input-group">
+        <input id="appInput" placeholder="e.g. Discord.exe or facebook.com">
+        <button onclick="addDistraction()">Block</button>
+      </div>
+      <ul id="distractionList"></ul>
+    </div>
+
+  </div>
+
+  <div id="customModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-icon">🎉</span>
+        <h2>Session Complete!</h2>
+      </div>
+      <p id="modalMessage">Superb work! Your focus block is done. Time to unplug and recharge your mind.</p>
+      <button id="modalCloseBtn" onclick="closeModal()">Acknowledge</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="storage.js"></script>
+  <script src="timer.js"></script>
+  <script src="chart.js"></script>
+</body>
+</html>
