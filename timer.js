@@ -1,191 +1,119 @@
-let timer;
-let seconds = 0;
-let limitSeconds = 0;
-let running = false;
+/**
+ * Focus Dashboard - Timer & Interception Management Architecture
+ * Core Engine Engine for Countdown Tracking and Domain Interception Validation
+ */
 
-const timerDisplay = document.getElementById("timer");
-const remainingDisplay = document.getElementById("remainingDisplay");
-const durationInput = document.getElementById("durationInput");
-const circle = document.getElementById("progressCircle");
+// Global Application State Variables
+let countdownInterval = null;
+let secondsRemaining = 0;
 
-// SVG Arc Configuration Properties
-const radius = circle.r.baseVal.value;
-const circumference = radius * 2 * Math.PI;
+// Initialize Workspace Event Listeners on DOM Load
+document.addEventListener("DOMContentLoaded", () => {
+    initializeTimerState();
+    setupNavigationIntercept();
+});
 
-circle.style.strokeDasharray = `${circumference} ${circumference}`;
-circle.style.strokeDashoffset = circumference;
-
-// Request System Notification Permissions on Script Initialization
-if ("Notification" in window && Notification.permission !== "granted") {
-  Notification.requestPermission();
+/**
+ * Validates tracking states across the application container layer
+ */
+function initializeTimerState() {
+    // Clear unexpected runtime locks upon fresh application initializations
+    localStorage.setItem("isTimerRunning", "false");
 }
 
-function setProgress(percent) {
-  const offset = circumference - (percent / 100) * circumference;
-  circle.style.strokeDashoffset = offset;
-}
+/**
+ * Main Controller to initiate the focus tracking runtime state
+ * @param {number} minutes - User-defined study duration parameters
+ */
+function startFocusSession(minutes) {
+    if (countdownInterval) clearInterval(countdownInterval);
 
-// Audio Synthesis Engine for the Break Chime
-function playCompletionSound() {
-  try {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    secondsRemaining = minutes * 60;
+    localStorage.setItem("isTimerRunning", "true");
     
-    // First Note (E5)
-    const osc1 = audioCtx.createOscillator();
-    const gain1 = audioCtx.createGain();
-    osc1.type = "sine";
-    osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime); 
-    gain1.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-    osc1.connect(gain1);
-    gain1.connect(audioCtx.destination);
-    osc1.start();
-    osc1.stop(audioCtx.currentTime + 0.4);
+    // Toggle system visual UI shield indicators if applicable
+    updateShieldUI(true);
 
-    // Second Note (A5) played at a slight delay
-    setTimeout(() => {
-      const osc2 = audioCtx.createOscillator();
-      const gain2 = audioCtx.createGain();
-      osc2.type = "sine";
-      osc2.frequency.setValueAtTime(880.00, audioCtx.currentTime);
-      gain2.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-      osc2.connect(gain2);
-      gain2.connect(audioCtx.destination);
-      osc2.start();
-      osc2.stop(audioCtx.currentTime + 0.6);
-    }, 150);
+    countdownInterval = setInterval(() => {
+        secondsRemaining--;
+        updateDisplayMetrics(secondsRemaining);
 
-  } catch (error) {
-    console.warn("Audio Context blocked or unsupported by browser architecture:", error);
-  }
+        if (secondsRemaining <= 0) {
+            terminateFocusSession(true);
+        }
+    }, 1000);
 }
 
-// System Alert Orchestration Engine with Integrated Center Pop-Up Modal
-function triggerSessionEndNotification() {
-  playCompletionSound();
-
-  // 1. Trigger the custom center screen HTML modal animation
-  const modalOverlay = document.getElementById("customModal");
-  modalOverlay.classList.add("active");
-
-  // 2. Keep the standard system tray notification fallback channel operational
-  const title = "Focus Block Completed!";
-  const options = {
-    body: "Superb work! Your focus block is done. Time to unplug and recharge your mind.",
-    icon: "https://cdn-icons-png.flaticon.com/512/2088/2088610.png"
-  };
-
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification(title, options);
-  }
-}
-
-// Global scope controller handler to close and deactivate modal window overlay
-function closeModal() {
-  const modalOverlay = document.getElementById("customModal");
-  modalOverlay.classList.remove("active");
-}
-
-function updateTimer() {
-  seconds++;
-
-  let hrs = Math.floor(seconds / 3600);
-  let mins = Math.floor((seconds % 3600) / 60);
-  let secs = seconds % 60;
-
-  timerDisplay.textContent =
-    String(hrs).padStart(2, "0") + ":" +
-    String(mins).padStart(2, "0") + ":" +
-    String(secs).padStart(2, "0");
-
-  let timeRemaining = limitSeconds - seconds;
-  let progressPercent = ((limitSeconds - seconds) / limitSeconds) * 100;
-  setProgress(Math.max(0, progressPercent));
-
-  if (timeRemaining <= 0) {
-    clearInterval(timer);
-    running = false;
-    durationInput.disabled = false;
-    circle.style.stroke = "#EF4444"; 
-
-    remainingDisplay.textContent = "Time's up! Session ended.";
+/**
+ * Gracefully terminates the running interval framework and resets state metrics
+ * @param {boolean} isCompleted - Distinguishes between manual breaks and complete loops
+ */
+function terminateFocusSession(isCompleted = false) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+    secondsRemaining = 0;
     
-    // Invoke the notification routing sequence
-    triggerSessionEndNotification();
-
-    saveSession(seconds);
-    seconds = 0;
-
-    if (typeof loadChart === "function") {
-      loadChart();
+    localStorage.setItem("isTimerRunning", "false");
+    updateShieldUI(false);
+    
+    if (isCompleted) {
+        alert("Focus Session Complete! Your tracking data has been safely logged.");
     }
-  } else {
-    let remMins = Math.floor(timeRemaining / 60);
-    let remSecs = timeRemaining % 60;
-    remainingDisplay.textContent = `Remaining: ${String(remMins).padStart(2, "0")}:${String(remSecs).padStart(2, "0")}`;
-  }
 }
 
-document.getElementById("startBtn").onclick = function () {
-  if (!running) {
-    let inputMinutes = parseInt(durationInput.value) || 25;
-    limitSeconds = inputMinutes * 60;
+/**
+ * Binds global event interceptors to prevent tab navigation out of bounds
+ */
+function setupNavigationIntercept() {
+    // Intercept clicks on anchor tags generated within the application canvas
+    document.addEventListener("click", (event) => {
+        const targetAnchor = event.target.closest("a");
+        if (!targetAnchor) return;
 
-    durationInput.disabled = true;
-    circle.style.stroke = "#10B981"; 
-    remainingDisplay.textContent = `Remaining: ${String(inputMinutes).padStart(2, "0")}:00`;
-    setProgress(100);
+        const destinationUrl = targetAnchor.getAttribute("href");
+        const isTimerActive = localStorage.getItem("isTimerRunning") === "true";
 
-    timer = setInterval(updateTimer, 1000);
-    running = true;
-  }
-};
+        // Check if the destination contains restricted domain indicators during focus blocks
+        if (isTimerActive && isDomainRestricted(destinationUrl)) {
+            event.preventDefault(); // Stop the browser from executing navigation
+            displayBlockWarning();
+        }
+    });
+}
 
-document.getElementById("stopBtn").onclick = function () {
-  if (running) {
-    clearInterval(timer);
-    running = false;
-    durationInput.disabled = false;
-    setProgress(0);
+/**
+ * Evaluates whether an outbound destination matches restricted tracking targets
+ * @param {string} url - Target URL parsed out of the event object
+ * @returns {boolean}
+ */
+function isDomainRestricted(url) {
+    if (!url) return false;
+    const targets = ["facebook.com", "fb.com", "instagram.com", "twitter.com"];
+    return targets.some(domain => url.toLowerCase().includes(domain));
+}
 
-    saveSession(seconds);
-    seconds = 0;
-    remainingDisplay.textContent = "Session stopped early.";
+function displayBlockWarning() {
+    alert("Access Prohibited: This domain is blocked until your active focus clock runs out!");
+}
 
-    if (typeof loadChart === "function") {
-      loadChart();
-    }
-  }
-};
-
-// --- Shield Block Simulation Controller Implementation ---
-let blockedItems = [];
-
-function addDistraction() {
-  const inputElement = document.getElementById("appInput");
-  const entityValue = inputElement.value.trim();
-
-  if (entityValue !== "") {
-    blockedItems.push(entityValue);
-    inputElement.value = "";
-    renderDistractions();
+function updateDisplayMetrics(totalSeconds) {
+    const mins = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
+    const secs = (totalSeconds % 60).toString().padStart(2, "0");
     
-    if (entityValue.includes(".") && !entityValue.endsWith(".exe")) {
-      alert(`[Simulation Active] Inbound HTTP requests bound to "${entityValue}" are now intercepted and dropped.`);
+    // Update the visual node elements inside index.html layout definitions
+    const displayNode = document.getElementById("timer-display");
+    if (displayNode) {
+        displayNode.textContent = `${mins}:${secs}`;
+    }
+}
+
+function updateShieldUI(isActive) {
+    const shieldNode = document.getElementById("focus-shield");
+    if (!shieldNode) return;
+    
+    if (isActive) {
+        shieldNode.classList.remove("shield-hidden");
     } else {
-      alert(`[Simulation Active] Runtime execution permissions for process "${entityValue}" revoked.`);
+        shieldNode.classList.add("shield-hidden");
     }
-  }
-}
-
-function renderDistractions() {
-  const containerList = document.getElementById("distractionList");
-  containerList.innerHTML = "";
-  
-  blockedItems.forEach(item => {
-    const li = document.createElement("li");
-    li.textContent = `🚫 Blocked: ${item}`;
-    containerList.appendChild(li);
-  });
 }
