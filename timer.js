@@ -25,6 +25,25 @@ function setProgress(percent) {
   circle.style.strokeDashoffset = offset;
 }
 
+/**
+ * Extension Communication Bridge
+ * Broadcasts tracking updates securely to your unpacked browser companion shield
+ * @param {string} actionType - Handshake parameters ("START_TIMER" or "STOP_TIMER")
+ */
+function signalExtension(actionType) {
+  // IMPORTANT: Replace this string with your actual extension ID from chrome://extensions
+  const extensionId = "YOUR_EXTENSION_ID_HERE"; 
+  
+  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+    chrome.runtime.sendMessage(extensionId, { type: actionType }, () => {
+      // Catch errors silently if extension isn't loaded yet
+      if (chrome.runtime.lastError) {
+        console.log("Extension connection status: Waiting for local unpacked installation.");
+      }
+    });
+  }
+}
+
 // Audio Synthesis Engine for the Break Chime
 function playCompletionSound() {
   try {
@@ -111,6 +130,9 @@ function updateTimer() {
 
     remainingDisplay.textContent = "Time's up! Session ended.";
     
+    // SIGNAL EXTENSION: Turn off tracking blocks when timer naturally runs down to 0
+    signalExtension("STOP_TIMER");
+
     // Invoke the notification routing sequence
     triggerSessionEndNotification();
 
@@ -139,6 +161,9 @@ document.getElementById("startBtn").onclick = function () {
 
     timer = setInterval(updateTimer, 1000);
     running = true;
+
+    // SIGNAL EXTENSION: Broadcast study signal to enforce website interception layers
+    signalExtension("START_TIMER");
   }
 };
 
@@ -156,6 +181,9 @@ document.getElementById("stopBtn").onclick = function () {
     if (typeof loadChart === "function") {
       loadChart();
     }
+
+    // SIGNAL EXTENSION: Lift website restrictions immediately when session is cleared early
+    signalExtension("STOP_TIMER");
   }
 };
 
